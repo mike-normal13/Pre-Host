@@ -30,6 +30,9 @@ namespace PreHost
 
         private static TcpClient _streamSocket = null;
 
+        private static string _phoneAddress = "";
+        private static string _phoneType = "";
+
         // TODO: we are going to need arrays of UdpClients for sending and responding to phones after they have connected to the host.
         //              all responders will listen on port _numberOfConnections + _startingPortNumber
 
@@ -59,43 +62,64 @@ namespace PreHost
                         // parse message to array
                         string[] messageArray = received_data.Split(' ');
 
-                        string address = messageArray[3];
-                        string type = messageArray[5];
+                        _phoneAddress = messageArray[3];
+                        _phoneType = messageArray[5];
 
-                        int assignedPort = _startingPortNumber + _numberOfConnections;
-
-                        // assemble connection response
-                        string response = "Hello there, use port: " + assignedPort.ToString();
-                        byte[] responseArray = Encoding.ASCII.GetBytes(response);
-                        
                         // connect tcp socket to phone.
-                        _streamSocket.Connect(address, _handshakePort);
-
-                        // send response back to phone with handshake response socket
-                       // handShakeResponder.Send(responseArray, responseArray.Count(), address, _handshakePort);
+                        // this call will also result,
+                        //  via a callback,
+                        //      in the host sending an assigned port number to the phone.
+                        _streamSocket.BeginConnect(_phoneAddress, _handshakePort, new AsyncCallback(initialHostToPhoneConnectionCallback), null);
                         
                         // TODO: we are probably going to need to set up the sockets corressponding to the new connection on a separate thread
                         // add a new slot to the slot array
-                        _slotArray[_numberOfConnections] = new Slot("melody", address,  assignedPort, _numberOfConnections);
+                        //_slotArray[_numberOfConnections] = new Slot("melody", _phoneAddress,  assignedPort, _numberOfConnections);
 
                         // TODO: we may want to keep a member thread array,
                         //          it might be easier to keep track of whether threads are alive or not....
                         // launch new thread based upon new Slot
-                        Thread thread = new Thread(new ThreadStart(_slotArray[_numberOfConnections].receiveSignal));
-                        thread.Start();
-
-                        // after we launch the thread for the new slot,
-                        //          increment the number of connections
-                        _numberOfConnections++;
+                        //Thread thread = new Thread(new ThreadStart(_slotArray[_numberOfConnections].receiveSignal));
+                        //thread.Start();
                     }
                 }
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
+            catch (Exception e){    Console.WriteLine(e.ToString());    }
             handShakeListener.Close();
             return 0;
+        }
+
+        /// <summary>
+        /// callback for when the host makes an initial TCP connection to a phone
+        /// </summary>
+        /// <param name="ar"></param>
+        public static void initialHostToPhoneConnectionCallback(IAsyncResult ar)
+        {
+            int assignedPort = _startingPortNumber + _numberOfConnections;
+
+            // assemble connection response
+            string response = "Hello there, use port: " + assignedPort.ToString();
+            byte[] responseArray = Encoding.ASCII.GetBytes(response);
+
+            NetworkStream stream =  _streamSocket.GetStream();
+
+            int y = responseArray.GetLength(0);
+
+            //  TODO: we were able to trigger an index out of range exception when we fiddled around with firing connection requests from
+            //                  the phone
+            stream.BeginWrite(responseArray, 0, responseArray.GetLength(0), new AsyncCallback(portAssignWriteToPhoneCallback
+                ), null);
+        }
+
+        /// <summary>
+        /// Call back for when the host sends an asigned port number to a newly connected phone
+        /// </summary>
+        /// <param name="ar"></param>
+        public static void portAssignWriteToPhoneCallback(IAsyncResult ar)
+        {
+            // TODO: once we have sent the message to the phone containg the phone's newly assigned port,
+            //                  increment the number of connections....
+
+            _numberOfConnections++;
         }
     }
 }

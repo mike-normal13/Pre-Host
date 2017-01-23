@@ -4,3 +4,9 @@ C:\Users\budge\Desktop\PreHost\PreHost\bin\Debug\PreHost.exe
 C:\Users\budge\Desktop\PreHost\PreHost\bin\Debug\PreHost.pdb
 C:\Users\budge\Desktop\PreHost\PreHost\obj\Debug\PreHost.exe
 C:\Users\budge\Desktop\PreHost\PreHost\obj\Debug\PreHost.pdb
+C:\Users\Mike\Desktop\Pre-Host\PreHost\PreHost\bin\Debug\PreHost.exe.config
+C:\Users\Mike\Desktop\Pre-Host\PreHost\PreHost\obj\Debug\PreHost.exe
+C:\Users\Mike\Desktop\Pre-Host\PreHost\PreHost\obj\Debug\PreHost.pdb
+C:\Users\Mike\Desktop\Pre-Host\PreHost\PreHost\bin\Debug\PreHost.exe
+C:\Users\Mike\Desktop\Pre-Host\PreHost\PreHost\bin\Debug\PreHost.pdb
+C:\Users\Mike\Desktop\Pre-Host\PreHost\PreHost\obj\Debug\PreHost.csprojResolveAssemblyReference.cache

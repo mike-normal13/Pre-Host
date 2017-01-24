@@ -9,6 +9,8 @@ using System.Threading;
 
 namespace PreHost
 {
+      //    TODO: maybe part of the problem is that you are using a TcpClient as a server...
+    //                      if switching all your network operations to non async does not work try using a Listener instead...
     //  TODO: the phone is not responding correctly to the port assign message.
     //  TODO: moving forward,
     //          for our intents and purposes,
@@ -19,8 +21,13 @@ namespace PreHost
 
     class Host
     {
+        //we need two Udp sockets to handle the broadcast
+        private static UdpClient _handShakeListener = null;
+        private static UdpClient _handShakeSender = null;
+
         // port number reserved for connection requests by phones
-        private const int _handshakePort = 9999;
+        private const int _handshakeReceivePort = 9998;
+        private const int _handshakeSendPort = 9999;
         private const int _tcpPort = 10000;
         // number of phones currently connected to the host.
         private static int _numberOfConnections = 0;
@@ -30,9 +37,13 @@ namespace PreHost
 
         private static TcpClient _streamSocket = null;
 
+        private static TcpListener _streamListener = null;
+
         private static string _phoneAddress = "";
         private static string _phoneType = "";
 
+
+        
         // TODO: we are going to need arrays of UdpClients for sending and responding to phones after they have connected to the host.
         //              all responders will listen on port _numberOfConnections + _startingPortNumber
 
@@ -40,11 +51,14 @@ namespace PreHost
         {
             _slotArray = new Slot[12];
             bool done = false;
-            
-            UdpClient handShakeListener = new UdpClient(_handshakePort);
+
+            _handShakeListener = new UdpClient(_handshakeReceivePort);
+            _handShakeSender = new UdpClient(_handshakeSendPort);
             _streamSocket = new TcpClient();
-            
-            IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, _handshakePort);
+
+            _streamListener = new TcpListener(_handshakeReceivePort);
+
+            IPEndPoint groupEP = new IPEndPoint(IPAddress.Any, _handshakeReceivePort);
             string received_data;
             byte[] receive_byte_array;
             try
@@ -52,7 +66,7 @@ namespace PreHost
                 //  TODO: this while loop is strictly in place to receive connection requests from phones.
                 while (!done)
                 {
-                    receive_byte_array = handShakeListener.Receive(ref groupEP);
+                    receive_byte_array = _handShakeListener.Receive(ref groupEP);
                     received_data = Encoding.ASCII.GetString(receive_byte_array, 0, receive_byte_array.Length);
                     Console.WriteLine("{0}", received_data);
 
@@ -65,12 +79,31 @@ namespace PreHost
                         _phoneAddress = messageArray[3];
                         _phoneType = messageArray[5];
 
-                        // connect tcp socket to phone.
-                        // this call will also result,
-                        //  via a callback,
-                        //      in the host sending an assigned port number to the phone.
-                        _streamSocket.BeginConnect(_phoneAddress, _handshakePort, new AsyncCallback(initialHostToPhoneConnectionCallback), null);
-                        
+                       int assignedPort = _startingPortNumber + _numberOfConnections;
+                       string hostName = Dns.GetHostName();
+                       IPAddress[] ipAddresses = Dns.GetHostAddresses(hostName);
+                       string hostIpAddress = "";
+
+                        // TODO: out of the 7 ipaddresses for my think pad on the home network,
+                        //                  the only one that was not ipv6 had an adress family of InterNetwork.
+                        //                      we need to double check and make sure that this kind of discrimination will work on other machines,
+                        //                          and on other networks....
+                        foreach(IPAddress address in ipAddresses)
+                        {
+                            if(address.AddressFamily == AddressFamily.InterNetwork)
+                            {
+                                hostIpAddress = address.ToString();
+                            }
+                        }
+
+                       // assemble connection response
+                       string response = "Hello there, use port: " + assignedPort.ToString() + " and address: " + hostIpAddress;
+                       byte[] responseArray = Encoding.ASCII.GetBytes(response);
+                       int g = responseArray.Length;
+
+                       _handShakeSender.Connect(_phoneAddress, _handshakeSendPort);
+                       _handShakeSender.Send(responseArray, responseArray.Length);
+
                         // TODO: we are probably going to need to set up the sockets corressponding to the new connection on a separate thread
                         // add a new slot to the slot array
                         //_slotArray[_numberOfConnections] = new Slot("melody", _phoneAddress,  assignedPort, _numberOfConnections);
@@ -84,7 +117,7 @@ namespace PreHost
                 }
             }
             catch (Exception e){    Console.WriteLine(e.ToString());    }
-            handShakeListener.Close();
+            _handShakeListener.Close();
             return 0;
         }
 
@@ -94,20 +127,11 @@ namespace PreHost
         /// <param name="ar"></param>
         public static void initialHostToPhoneConnectionCallback(IAsyncResult ar)
         {
-            int assignedPort = _startingPortNumber + _numberOfConnections;
+            _streamSocket.EndConnect(ar);
 
-            // assemble connection response
-            string response = "Hello there, use port: " + assignedPort.ToString();
-            byte[] responseArray = Encoding.ASCII.GetBytes(response);
+            bool i = _streamSocket.Connected;
 
-            NetworkStream stream =  _streamSocket.GetStream();
-
-            int y = responseArray.GetLength(0);
-
-            //  TODO: we were able to trigger an index out of range exception when we fiddled around with firing connection requests from
-            //                  the phone
-            stream.BeginWrite(responseArray, 0, responseArray.GetLength(0), new AsyncCallback(portAssignWriteToPhoneCallback
-                ), null);
+            bool k = true;
         }
 
         /// <summary>
@@ -120,6 +144,11 @@ namespace PreHost
             //                  increment the number of connections....
 
             _numberOfConnections++;
+        }
+
+        public static void readAfterPhoneAcceptedConnectionCallback(IAsyncResult ar)
+        {
+            int y = 0;
         }
     }
 }

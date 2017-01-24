@@ -23,8 +23,8 @@ namespace PreHost
         private IPEndPoint _receivingEndPoint = null;
         // the port the phone will be listening on,
         //  all phones will be listening on 9999 for now.
-        private int _sendingPort = 9999;
-        //private UdpClient _sendingSocket = null;
+        private int _sendingPort = 10000;
+        private UdpClient _sendingSocket = null;
         private UdpClient _receivingSocket = null;
         
         //  TODO: this may not be neccessary....
@@ -40,18 +40,34 @@ namespace PreHost
             _receivingPort = receivingPort;
             _id = id;                       // TODO: may get scrapped.
 
-            //_sendingSocket = new UdpClient(_phoneAddress, _sendingPort);
+            _sendingSocket = new UdpClient(_phoneAddress, _sendingPort);
             //  TODO: it would be tidy if the receving socket for any given slot would only receive data from the phone it was assigned to...
             _receivingSocket = new UdpClient(_phoneAddress, _receivingPort);    // SUSPect
         }
 
-        public void receiveSignal()
+        //  TODO: there seems to be a strict back and forth thing going on....
+        //                  the below method violates this....
+        //                      we are in the process of having the host receive a message from the phone before it sends the message below.
+        //                          so the thread created in the Host class will need to call a method that receives instead of sends...
+
+        public void setUpPlayConnection()
+        {
+            string startPlayMessage = "hey, host is ready for play signals on port: " + _receivingPort.ToString();
+            byte[] startPlayMessageBytes = Encoding.ASCII.GetBytes(startPlayMessage);
+            _sendingSocket.Connect(_phoneAddress, _sendingPort); 
+            _sendingSocket.Send(startPlayMessageBytes, startPlayMessageBytes.Length, _phoneAddress, _sendingPort);
+
+            receivePlaySignal();
+        }
+
+        public void receivePlaySignal()
         {
             //  TODO: not sure what effect having BeginReceive will have at this point....
-            //while(!stop)
-            //{
-                _receivingSocket.BeginReceive(new AsyncCallback(receiveSignalCallback), this);
-            //}
+            while(!stop)
+            {
+                //_receivingSocket.BeginReceive(new AsyncCallback(receiveSignalCallback), this);
+                int y = 9;
+            }
         }
 
         public void receiveSignalCallback(IAsyncResult ar)

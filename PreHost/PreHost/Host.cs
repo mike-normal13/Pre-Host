@@ -28,7 +28,7 @@ namespace PreHost
         // port number reserved for connection requests by phones
         private const int _handshakeReceivePort = 9998;
         private const int _handshakeSendPort = 9999;
-        private const int _tcpPort = 10000;
+        private const int _playSendPort = 10000;
         // number of phones currently connected to the host.
         private static int _numberOfConnections = 0;
         private static int _startingPortNumber = 10001;
@@ -46,7 +46,6 @@ namespace PreHost
         
         // TODO: we are going to need arrays of UdpClients for sending and responding to phones after they have connected to the host.
         //              all responders will listen on port _numberOfConnections + _startingPortNumber
-
         static int Main(string[] args)
         {
             _slotArray = new Slot[12];
@@ -106,13 +105,13 @@ namespace PreHost
 
                         // TODO: we are probably going to need to set up the sockets corressponding to the new connection on a separate thread
                         // add a new slot to the slot array
-                        //_slotArray[_numberOfConnections] = new Slot("melody", _phoneAddress,  assignedPort, _numberOfConnections);
+                        _slotArray[_numberOfConnections] = new Slot(_phoneType, _phoneAddress,  assignedPort, _numberOfConnections);
 
                         // TODO: we may want to keep a member thread array,
                         //          it might be easier to keep track of whether threads are alive or not....
                         // launch new thread based upon new Slot
-                        //Thread thread = new Thread(new ThreadStart(_slotArray[_numberOfConnections].receiveSignal));
-                        //thread.Start();
+                        Thread thread = new Thread(new ThreadStart(_slotArray[_numberOfConnections].receivePlaySignal));
+                        thread.Start();
                     }
                 }
             }
@@ -126,7 +125,7 @@ namespace PreHost
         /// </summary>
         /// <param name="ar"></param>
         public static void initialHostToPhoneConnectionCallback(IAsyncResult ar)
-        {
+         {
             _streamSocket.EndConnect(ar);
 
             bool i = _streamSocket.Connected;

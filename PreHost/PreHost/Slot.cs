@@ -8,8 +8,6 @@ using System.Net;
 
 namespace PreHost
 {
-    // TODO:    this class will be created 
-    //              and run on a seperate thread whenever a successfull connection is made between the host and a phone.
     //  TODO: this class needs to handle the creation of the Melody, Percussion, and Sampler contexts.
     class Slot
     {
@@ -21,9 +19,11 @@ namespace PreHost
         private int _receivingPort = 0;
 
         private IPEndPoint _receivingEndPoint = null;
+        
         // the port the phone will be listening on,
         //  all phones will be listening on 9999 for now.
         private int _sendingPort = 10000;
+        
         private UdpClient _sendingSocket = null;
         private UdpClient _receivingSocket = null;
         
@@ -31,6 +31,7 @@ namespace PreHost
         // connection number
         private int _id = -1;
 
+        // TODO: stop condition is unimplemented.
         private bool stop = false;
 
         public Slot(string type, string address, int receivingPort, int id)
@@ -50,22 +51,36 @@ namespace PreHost
             string startPlayMessage = "hey, host is ready for play signals on port: " + _receivingPort.ToString();
             byte[] startPlayMessageBytes = Encoding.ASCII.GetBytes(startPlayMessage);
            _sendingSocket.Connect(_phoneAddress, _sendingPort); 
-            //_sendingSocket.Send(startPlayMessageBytes, startPlayMessageBytes.Length, _phoneAddress, _sendingPort);
             _sendingSocket.Send(startPlayMessageBytes, startPlayMessageBytes.Length);
 
             receivePlaySignal();
         }
 
+        //  TODO: would having separate receive methods for the three phone contexts reduce latency????
+        //  TODO: this method is unimplemented.
+        //  TODO: how are we going to handle the three phone contexts here???,
+        //                      we'll start with the Melody Maker since it will probably be the simplest to trigger.
+        /// <summary>
+        /// method to receive play/control signals from the phone
+        /// </summary>
         public void receivePlaySignal()
         {
             //  TODO: not sure what effect having BeginReceive will have at this point....
             while(!stop)
             {
+                //  TODO: running this call in a loop causes a stack overflow, or the like
                 //_receivingSocket.BeginReceive(new AsyncCallback(receiveSignalCallback), this);
                 int y = 9;
+
+                //  TODO: receive, then parse the signal
             }
         }
 
+        /// <summary>
+        /// Thread is launced off of this method.
+        /// it sends the message back to the phone stating that the host is ready to receive play/control signals from the phone.
+        /// </summary>
+        /// <param name="ar"></param>
         public void receiveSignalCallback(IAsyncResult ar)
         {
             byte[] addressBytes = Encoding.ASCII.GetBytes(((Slot)ar)._phoneAddress);

@@ -45,17 +45,13 @@ namespace PreHost
             _receivingSocket = new UdpClient(_phoneAddress, _receivingPort);    // SUSPect
         }
 
-        //  TODO: there seems to be a strict back and forth thing going on....
-        //                  the below method violates this....
-        //                      we are in the process of having the host receive a message from the phone before it sends the message below.
-        //                          so the thread created in the Host class will need to call a method that receives instead of sends...
-
         public void setUpPlayConnection()
         {
             string startPlayMessage = "hey, host is ready for play signals on port: " + _receivingPort.ToString();
             byte[] startPlayMessageBytes = Encoding.ASCII.GetBytes(startPlayMessage);
-            _sendingSocket.Connect(_phoneAddress, _sendingPort); 
-            _sendingSocket.Send(startPlayMessageBytes, startPlayMessageBytes.Length, _phoneAddress, _sendingPort);
+           _sendingSocket.Connect(_phoneAddress, _sendingPort); 
+            //_sendingSocket.Send(startPlayMessageBytes, startPlayMessageBytes.Length, _phoneAddress, _sendingPort);
+            _sendingSocket.Send(startPlayMessageBytes, startPlayMessageBytes.Length);
 
             receivePlaySignal();
         }
